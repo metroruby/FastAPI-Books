@@ -1,29 +1,51 @@
-from fastapi import FastAPI, Path, Query
+from typing import List
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from flask import make_response, abort
+
+class BookIn(BaseModel):
+    tname: str = None
+    author: str = None
 
 app = FastAPI()
 
-fake_items_db = [
-    {
-      "item_id": "1",
-      "name": "Game of thrones"
+BOOKSTORE = {
+    "Measure What Matters": {
+        "tname": "Measure What Matters",
+        "author": "John Doerr",
     },
-    {
-      "item_id": "2",
-      "name": "Clash of kings"
-    }
-]
-
+    "Misbehaving": {
+        "tname": "Misbehaving",
+        "author": "Richard H. Thaler",
+    },
+    "Pre-Suasion": {
+        "tname": "Pre-Suasion",
+        "author": "Robert Caildini",
+    },
+}
 
 @app.get("/books/")
-async def read_item():
-    return fake_items_db
+async def read_all():
+    return [BOOKSTORE[key] for key in sorted(BOOKSTORE.keys())]
 
-@app.get("/books/{item_id}")
-async def read_items(
-    item_id: int = Path(..., title="The ID of the item to get"),
-    q: str = Query(None, alias="item-query"),
-):
-    results = {"item_id": item_id}
-    if q:
-        results.update({"q": q})
-    return results
+@app.get("/books/{tname}")
+async def read_one(tname):
+    if tname in BOOKSTORE:
+        titelbook = BOOKSTORE.get(tname)
+    else:
+        abort(
+            404, "Book with last name {tname} not found".format(author=author)
+        )
+    return titelbook
+
+def fake_save_book(book_in: BookIn):
+    book_in_db = BookIn(**book_in.dict())
+    print("Book saved!")
+    return book_in_db
+
+@app.post("/books/", response_model=BookIn)
+async def create_book(*, book_in: BookIn):
+    book_saved = fake_save_book(book_in)
+    return book_saved
